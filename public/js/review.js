@@ -57,6 +57,9 @@ export const deleteReview = async (reviewId) => {
 
     if (res.status === 204) {
       showAlert('success', 'Review was succesfully deleted!');
+      window.setTimeout(() => {
+        location.reload(true);
+      }, 600);
     }
   } catch (err) {
     showAlert('error', 'Error with deleting review!');
