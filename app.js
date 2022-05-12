@@ -1,3 +1,4 @@
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const path = require('path');
 const express = require('express');
 const rateLimit = require('express-rate-limit');
@@ -18,6 +19,8 @@ const reviewRouter = require('./routes/reviewRoutes');
 const bookingRouter = require('./routes/bookingRoutes');
 const viewRouter = require('./routes/viewRoutes');
 const bookingController = require('./controllers/bookingController');
+const User = require('./models/userModel');
+const Booking = require('./models/bookingModel');
 
 // Start express code
 const app = express();
@@ -57,12 +60,53 @@ app.use('/api', limiter);
 
 // Stripe webhook, BEFORE body-parser, because stripe needs the body as stream
 
-app.use(bodyParser.json());
+const createBookingCheckout = async (session) => {
+  const tour = session.client_reference_id;
+  const userFound = await User.findOne({ email: session.customer_email });
+  const user = userFound._id;
+  const price = session.amount_total / 100;
+  console.log(session);
+
+  await Booking.create({ tour, user, price });
+};
+
+// app.use(bodyParser.json());
 app.post(
   '/webhook-checkout',
-  bodyParser.raw({ type: 'application/json' }),
+  // bodyParser.raw({ type: 'application/json' }),
   // express.raw({ type: 'application/json' }),
-  bookingController.webhookCheckout
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const signature = req.headers['stripe-signature'];
+
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      return res.status(400).send(`Webhook error: ${err.message}`);
+    }
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+        // eslint-disable-next-line no-case-declarations
+        const session = event.data.object;
+        // Then define and call a function to handle the event checkout.session.completed
+        createBookingCheckout(session);
+        break;
+      // ... handle other event types
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    // if (event.type === 'checkout.session.completed')
+    //   createBookingCheckout(event.data.object);
+
+    res.status(200).json({ received: true });
+  }
 );
 
 // Body parsers, reading data from body into req.body
