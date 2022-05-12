@@ -1,0 +1,18 @@
+mixin reviewCard(review)
+    .reviews__card
+        .reviews__avatar
+            - if(review.user)
+                img.reviews__avatar-img(src=`/img/users/${review.user.photo}`)
+                h6.reviews__user= review.user.name
+        p.reviews__text= review.review
+        if toursNames
+            a.reviews__tour(href=`/tour/${review.tour.slug}`)= review.tour.name
+        .reviews__rating
+            each star in [1, 2, 3, 4, 5]
+                svg.reviews__star(class=`reviews__star--${review.rating >= star ? 'active' : 'inactive'}`)
+                    use(xlink:href='/img/icons.svg#icon-star')
+        - if(user)
+            - if (review.user.id === user.id)
+                .reviews__change 
+                    button.review__change.review__edit#review__edit(data-review-id=`${review.id}`) Edit
+                    button.review__change.review__delete#review__delete(data-review-id=`${review.id}`) Delete

@@ -1,0 +1,12 @@
+section.add-review 
+    .login-form
+        h2.heading-secondary.ma-bt-lg Leave a review
+        form.form.review--form(data-ids=`${JSON.stringify( {user: user.id, tour: tour.id })}`)
+            .form__group
+                label.form__label(for='review') Review
+                input#review.form__input(type='text', required)
+            .form__group
+                label.form__label(for='rating') Rating(1-5)
+                input#rating.form__input(type='number', min='1' max='5' required)
+            .form__group
+                button.btn.btn--green Submit review
